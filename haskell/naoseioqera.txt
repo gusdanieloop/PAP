@@ -1,0 +1,33 @@
+pertence:: Int -> [Int] -> Bool
+pertence _[] = false
+pertence n x:xs | n == x = true
+                  otherwise = pertence n xs
+
+maior:: [Int] -> Int
+maior x:xs | x> maior xs = x
+             otherwise maior xs
+
+contaocorrencias:: Int --> [Int] --> Int
+contaocorrencias n x:xs | n == x = 1 + contaocorrencias n xs
+                         otherwise = contaocorrencias n xs
+
+menor:: [int] -> int
+menor [x] = x
+menor x:xs | x < (menor xs) = x
+           | otherwise = menor xs
+
+popularlista:: Int -> [int] -> [int]
+popularlista n [] = [n]
+popularlista n (x:xs) = (x:xs) ++ [n]
+
+removeMenor::[int] -> int -> [int]
+removeMenor [] _ = []
+removeMenor (x:xs) n | (x==n) = xs
+                     | otherwise = [x]  ++ (removeMenor xs n)
+
+aux:: [int] -> [ int] -> [int]
+aux lista_ordenada [] = lista_ordenada
+aux lista_ordenada (x:xs) = aux (lista_ordenada ++ [menor(x:xs)])
+
+ordena :: [Int] -> [int]
+oderna lista = aux lista []

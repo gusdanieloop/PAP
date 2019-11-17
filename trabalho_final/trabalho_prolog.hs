@@ -33,9 +33,6 @@ unifyTerm _ _ =
     Nothing
 
 unifyPred :: Predicate -> Predicate -> Maybe Substitution
---socorro
-unifyPred (_, []) (_, []) =
-    Just []
 --socorro 2
 unifyPred (n1, t1) (n2, t2) 
     | n1 /= n2 || length t1 /= length t2 =
@@ -45,7 +42,7 @@ unifyPred (n1, t1) (n2, t2)
 
 unifyBody :: [Term] -> [Term] -> Maybe Substitution
 --serio
-unifyBody [x] [y] = unifyTerm x y
+unifyBody [] [] = Nothing
 
 unifyBody (x:xs) (y:ys) = Just $ merge (fromJust (unifyTerm x y)) (fromJust (unifyBody xs ys))
 -- TODO

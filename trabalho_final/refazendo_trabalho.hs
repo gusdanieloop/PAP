@@ -1,3 +1,4 @@
+import System.Environment
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Char
 
@@ -22,30 +23,57 @@ type Substitution = [(Name, Term)]
 **********************************
 -}
 
-variable :: Parser Term
-variable = do
-    f_letter <- upper
-    r_letter <- many1 lower
-    return (Var (0, f_letter:r_letter))
-
+--name ::= lowercase alphanum*
+name :: Parser String
+name = do
+    head <- lower
+    tail <- many alphaNum
+    return (head:tail)
+-- atom ::= name | digit+
 atom :: Parser Term
 atom = do
-    a_term <- many1 lower
-    return (Atom a_term)
+    n <- name <|> many1 digit
+    return (Atom n)
+-- varialbe ::= uppercase alphanum*
+variable :: Parser Term
+variable = do
+    head <- upper
+    body <- many alphaNum
+    return (Var (0, head:body))
 
+-- arguments "(" (term ("," term)*)? ")"
+arguments :: Parser [Term]
+arguments = do
+    char '('
+    body <- sepBy term (char ',')
+    char ')'
+    return body
+-- predicate ::= name arguments    
 predicate :: Parser Term
 predicate = do
-    nome <- many1 lower
-    char '('
-    terms <- term `sepBy1` (char ',')
-    char ')'
-    return (Predicate (nome, terms))
-    
+    n <- name
+    args <- arguments
+    return (Predicate (n, args))  
+
+-- rule ::= predicate (":-" predicate ("," predicate)*)? "."
+rule :: Parser Rule
+rule = do
+    char ':'
+    char '-'
+    n <- predicate
+    m <- sepBy predicate (char ',')
+    char '.'
+    return (n, m)
+
+-- rules ::= rule + eof
+rules :: Parser [Rule]
+rules = do
+    r <- sepBy rule (char '\n')
+    fim <- eof
+    return r
 term :: Parser Term 
-term = 
-    try variable <|> predicate <|> atom 
-
-
+term = do
+    try predicate <|> atom <|> variable 
 {-
 **************************************
 **********END_PARSER******************
@@ -55,7 +83,13 @@ term =
 main :: IO ()
 
 main = do
-    putStrLn "Digite o tipo A: "
+    args <- getArgs
+    case args of
+        [file] -> do
+            content <- readFile file
+            print (parse rule file content)
+
+    {--putStrLn "Digite o tipo A: "
     a <- getLine
     putStrLn "Digite o tipo B: "
     b <- getLine
@@ -65,7 +99,7 @@ main = do
             let mgu = unifyTerm termo_a termo_b in
                 putStrLn ("Unificação de A com B: " ++ show mgu)
         x ->
-            putStrLn "Erro Parsing"
+            putStrLn "Erro Parsing"--}
 
 {-
 ***********************************

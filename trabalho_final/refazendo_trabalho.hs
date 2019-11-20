@@ -16,8 +16,14 @@ type Rule = (Predicate, [Predicate])
 
 type Substitution = [(Name, Term)]
 
-name :: Parser Term
-name = do
+{-
+**********************************
+**********PARSER******************
+**********************************
+-}
+
+variable :: Parser Term
+variable = do
     f_letter <- upper
     r_letter <- many1 lower
     return (Var (0, f_letter:r_letter))
@@ -37,8 +43,17 @@ predicate = do
     
 term :: Parser Term 
 term = 
-    try name <|> predicate <|> atom 
- 
+    try variable <|> predicate <|> atom 
+
+
+{-
+**************************************
+**********END_PARSER******************
+**************************************
+-}
+
+main :: IO ()
+
 main = do
     putStrLn "Digite o tipo A: "
     a <- getLine
@@ -52,7 +67,11 @@ main = do
         x ->
             putStrLn "Erro Parsing"
 
---unificador
+{-
+***********************************
+************UNIFICADOR*************
+***********************************
+-}
 unifyTerm :: Term -> Term -> Maybe Substitution
 
 -- (REFL)
@@ -122,6 +141,12 @@ substTerm s var@(Var name) =
 
 substTerm s (Predicate (x, terms)) =
     Predicate (x, mapear (substTerm s) terms)
+
+{-
+***************************************
+************END_UNIFICADOR*************
+***************************************
+-}
 
 concatenar :: [a] -> [a] -> [a]
 concatenar = (++)

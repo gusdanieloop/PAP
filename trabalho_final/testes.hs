@@ -16,8 +16,7 @@ db = [
     (("likes", [Atom "bob", Atom "apple"]), []),
     (("likes", [Atom "alice", Atom "grape"]), []),
     (("likes", [Atom "charles", Var (0, "Y")]), [("yellow", [Var (0, "Y")])]),
-    (("yellow", [Atom "banana"]), [])
-]
+    (("yellow", [Atom "banana"]), [])]
 
 freshen :: Rule -> Rule
 freshen ((name, terms), body) =

@@ -29,11 +29,13 @@ name = do
     head <- lower
     tail <- many alphaNum
     return (head:tail)
+
 -- atom ::= name | digit+
 atom :: Parser Term
 atom = do
     n <- name <|> many1 digit
     return (Atom n)
+
 -- varialbe ::= uppercase alphanum*
 variable :: Parser Term
 variable = do
@@ -48,6 +50,7 @@ arguments = do
     body <- sepBy term (char ',')
     char ')'
     return body
+
 -- predicate ::= name arguments    
 predicate :: Parser Term
 predicate = do
@@ -55,22 +58,6 @@ predicate = do
     args <- arguments
     return (Predicate (n, args))  
 
--- rule ::= predicate (":-" predicate ("," predicate)*)? "."
-rule :: Parser Rule
-rule = do
-    char ':'
-    char '-'
-    n <- predicate
-    m <- sepBy predicate (char ',')
-    char '.'
-    return (n, m)
-
--- rules ::= rule + eof
-rules :: Parser [Rule]
-rules = do
-    r <- sepBy rule (char '\n')
-    fim <- eof
-    return r
 term :: Parser Term 
 term = do
     try predicate <|> atom <|> variable 
@@ -80,15 +67,28 @@ term = do
 **************************************
 -}
 
+db :: [Rule]
+db = [
+    (("likes", [Atom "alice", Atom "pear"]), []),
+    (("likes", [Atom "alice", Atom "orange"]), []),
+    (("likes", [Atom "bob", Atom "pear"]), []),
+    (("likes", [Atom "bob", Var (0, "X")]), [("yellow", [Var (0, "X")])]),
+    (("likes", [Atom "charlie", Var (0, "X")]), [("likes", [Atom "alice", Var (0, "X")]), ("likes", [Atom "bob", Var (0, "X")])]),
+    (("yellow", [Atom "banana"]), [])]
+
+my_goal :: Predicate
+my_goal = ("likes", [Atom "charlie", Var (0, "X")])
+
 main :: IO ()
 
 main = do
+    {-
     args <- getArgs
     case args of
         [file] -> do
             content <- readFile file
-            print (parse rule file content)
-
+            print (parse rules file content)
+    -}
     {--putStrLn "Digite o tipo A: "
     a <- getLine
     putStrLn "Digite o tipo B: "
@@ -100,7 +100,8 @@ main = do
                 putStrLn ("Unificação de A com B: " ++ show mgu)
         x ->
             putStrLn "Erro Parsing"--}
-
+    let result = resolve my_goal db
+    print result
 {-
 ***********************************
 ************UNIFICADOR*************
@@ -179,6 +180,71 @@ substTerm s (Predicate (x, terms)) =
 {-
 ***************************************
 ************END_UNIFICADOR*************
+***************************************
+-}
+
+{-
+***************************************
+***********SUBST_VAR_NUMBER************
+***************************************
+-}
+
+freshen :: Rule -> Rule
+freshen ((name, terms), body) =
+    ((name, mapear freshenTerm terms), body)
+
+freshen (pred, body) =
+    (freshenPred pred, mapear freshenPred body)
+
+freshenPred :: Predicate -> Predicate
+freshenPred (name, terms) =
+    (name, mapear freshenTerm terms)
+        
+freshenTerm :: Term -> Term
+freshenTerm (Atom s) = 
+    Atom s
+
+freshenTerm (Var (i, s)) =
+    Var (i + 1, s)
+
+freshenTerm (Predicate (name, body)) =
+    Predicate (name, mapear freshenTerm body)
+
+{-
+***************************************
+*********SUBST_VAR_NUMBER_END**********
+***************************************
+-}
+
+{-
+***************************************
+***********RESOLVER_REQUEST************
+***************************************
+-}
+resolve :: Predicate -> [Rule] -> [Substitution]
+resolve goal rules =
+    let rules' = fmap freshen rules in
+    --usa monada List
+    do 
+        (pred, body) <- rules' 
+        case unifyPred goal pred of
+            Just t1 ->
+                resolveBody t1 rules' body
+            Nothing ->
+                --zero respostas
+                []
+
+resolveBody :: Substitution -> [Rule] -> [Predicate] -> [Substitution]
+resolveBody t1 rules [] =
+    return t1 --nao tem corpo, mas ja foi provado a parte de antes .... no bd -> likes(bob, apple), na pesquisa likes(bob, X), t1 = {X -> apple}
+resolveBody t1 rules (p:ps) = do
+    let rules' = fmap freshen rules in
+        do
+            t2 <- resolve (substTerm t1 p) rules' 
+            resolveBody (compose t2 t1) rules' ps
+{-
+***************************************
+*********RESOLVER_REQUEST_END**********
 ***************************************
 -}
 

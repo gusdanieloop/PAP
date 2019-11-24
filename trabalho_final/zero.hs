@@ -139,7 +139,7 @@ resolveBody t1 rules [] = return t1
 resolveBody t1 rules (p:ps) = do
     let rules' = mapear freshen rules in
         do
-            t2 <- resolve (Predicate <$> (substTerm t1 p)) rules'
+            t2 <- resolve (substPred t1 p) rules'
             resolveBody (compose t2 t1) rules' ps
 
 main :: IO ()
@@ -148,8 +148,14 @@ main = do
     case args of
         [file] -> do
             content <- readFile file
-            print (parse rules file content)
-    
+            case (parse rules file content) of
+                (Right db) -> do
+                    putStrLn "O que deseja saber?"
+                    a <- getLine
+                    case (parse predicate "<stdin>" a) of
+                        (Right ta) -> do
+                            let result = resolve ta db
+                            print result
 
 -- funções auxiliares
 
